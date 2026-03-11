@@ -133,11 +133,11 @@
                     if (response.ok) {
                         displayResults(data);
                     } else {
-                        alert(`Error: ${data.details || 'Failed to fetch recommendation'}`);
+                        alert(`Error ${response.status}: ${data.details || data.error || 'Failed to fetch recommendation'}`);
                     }
                 } catch (err) {
                     console.error(err);
-                    alert("Connection failed. Is the server running on port 3000?");
+                    alert("Connection failed: " + err.message);
                 } finally {
                     btn.disabled = false;
                     loading.classList.add('hidden');
