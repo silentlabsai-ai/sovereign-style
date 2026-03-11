@@ -170,7 +170,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const thermalWeight = calculateOutfitWeight(weatherData);
     const palette = getPalette(new Date());
     const recommendations = await getOutfitRecommendations(thermalWeight, palette, userProfile);
-    const imageUrls = await generateOutfitVisuals(recommendations);
+
+    let imageUrl = '';
+    try {
+      const imageUrls = await generateOutfitVisuals(recommendations);
+      imageUrl = imageUrls[0] || '';
+    } catch (imgErr) {
+      console.error('Image generation failed (non-fatal):', imgErr);
+    }
 
     return res.status(200).json({
       city: weatherData.name,
@@ -180,7 +187,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         description: `${item.name}: ${item.description}`,
         reasoning: item.reasoning,
         color: item.color,
-        image_url: imageUrls[0],
+        image_url: imageUrl,
         shop_link: `https://www.theiconic.com.au/catalog/?q=${encodeURIComponent(item.name)}`
       })),
       overall_styling_advice: recommendations.overall_styling_advice
