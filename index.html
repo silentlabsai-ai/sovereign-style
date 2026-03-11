@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sovereign Style | Your Morning Brief</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F9F7F2; /* Soft Cream */
+            color: #1A1A1A;
+        }
+        h1, h2, h3 {
+            font-family: 'Playfair Display', serif;
+        }
+        .vogue-border {
+            border-bottom: 2px solid #1A1A1A;
+        }
+        .btn-premium {
+            background-color: #1A1A1A;
+            color: white;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        .btn-premium:hover {
+            background-color: #333;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .outfit-card {
+            background: white;
+            transition: transform 0.4s ease;
+        }
+        .outfit-card:hover {
+            transform: scale(1.02);
+        }
+        .loader {
+            border-top-color: #1A1A1A;
+            animation: spinner 0.8s linear infinite;
+        }
+        @keyframes spinner {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen px-6 py-12 md:px-24">
+    <!-- Header -->
+    <header class="max-w-7xl mx-auto mb-20 text-center">
+        <div class="inline-block vogue-border pb-2 mb-8">
+            <h1 class="text-5xl md:text-7xl font-bold tracking-tighter">SOVEREIGN STYLE</h1>
+        </div>
+        <p class="text-sm uppercase tracking-[0.4em] text-gray-500 italic">Curating Authenticity for the Modern Professional</p>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto">
+        <section id="hero" class="flex flex-col items-center justify-center mb-24">
+            <div class="max-w-2xl text-center mb-12">
+                <h2 class="text-3xl md:text-4xl mb-6">Dress for the data. <br><span class="italic">Style for the ambition.</span></h2>
+                <p class="text-gray-600 leading-relaxed mb-10">Our AI engine analyzes live Australian weather, market trends, and your unique professional persona to deliver your daily sartorial brief.</p>
+                
+                <!-- User ID Mock Input -->
+                <div class="mb-8 flex flex-col items-center">
+                    <input type="text" id="userId" placeholder="Enter User ID (e.g. user_123)" class="bg-transparent border-b border-gray-300 focus:border-black outline-none px-4 py-2 text-center w-full max-w-xs mb-4">
+                </div>
+
+                <button id="briefBtn" class="btn-premium px-12 py-5 text-sm font-semibold flex items-center gap-3">
+                    Get My Morning Brief
+                </button>
+            </div>
+        </section>
+
+        <!-- Loading State -->
+        <div id="loading" class="hidden flex flex-col items-center justify-center py-20">
+            <div class="loader ease-linear rounded-full border-2 border-t-2 border-gray-200 h-10 w-10 mb-4"></div>
+            <p class="text-sm uppercase tracking-widest italic">Synchronizing Seasonal Data...</p>
+        </div>
+
+        <!-- Result Section -->
+        <section id="results" class="hidden animate-in fade-in duration-1000">
+            <div id="weatherInfo" class="text-center mb-16 italic text-gray-600 border-y border-gray-100 py-6">
+                <!-- Weather info injected here -->
+            </div>
+
+            <div id="outfitGrid" class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                <!-- Cards injected here -->
+            </div>
+
+            <div id="stylingAdvice" class="mt-20 max-w-3xl mx-auto text-center border-t border-black pt-12">
+                <h3 class="text-2xl mb-4 italic">The Final Note</h3>
+                <p id="adviceText" class="text-lg text-gray-700 leading-relaxed"></p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="mt-32 text-center text-xs tracking-widest text-gray-400 uppercase">
+        © 2026 Sovereign Style AU. All Rights Reserved.
+    </footer>
+
+    <script>
+        const API_BASE = '/api/v1';
+
+        async function getBrief() {
+            const btn = document.getElementById('briefBtn');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const userId = document.getElementById('userId').value || 'user_123';
+
+            if (!navigator.geolocation) {
+                alert("Geolocation is not supported by your browser");
+                return;
+            }
+
+            btn.disabled = true;
+            loading.classList.remove('hidden');
+            results.classList.add('hidden');
+
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const { latitude, longitude } = position.coords;
+
+                try {
+                    const response = await fetch(`${API_BASE}/generate-outfit`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ latitude, longitude, userId })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        displayResults(data);
+                    } else {
+                        alert(`Error: ${data.details || 'Failed to fetch recommendation'}`);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert("Connection failed. Is the server running on port 3000?");
+                } finally {
+                    btn.disabled = false;
+                    loading.classList.add('hidden');
+                }
+            }, (error) => {
+                alert("Location access denied. Please enable to get accurate styling.");
+                btn.disabled = false;
+                loading.classList.add('hidden');
+            });
+        }
+
+        function displayResults(data) {
+            const results = document.getElementById('results');
+            const weatherInfo = document.getElementById('weatherInfo');
+            const outfitGrid = document.getElementById('outfitGrid');
+            const adviceText = document.getElementById('adviceText');
+
+            weatherInfo.innerText = `${data.city} | ${data.currentTemp}°C | Thermal Weight: ${data.thermalWeight}/10`;
+            adviceText.innerText = data.overall_styling_advice;
+
+            outfitGrid.innerHTML = data.outfits.map(item => `
+                <div class="outfit-card group">
+                    <div class="aspect-[16/9] w-full bg-gray-100 overflow-hidden mb-6">
+                        <img src="${item.image_url}" alt="${item.description}" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700">
+                    </div>
+                    <div class="px-2">
+                        <h4 class="text-xs tracking-[0.2em] font-bold uppercase mb-2 border-b border-gray-100 pb-2">${item.color} ${item.name.split(':')[0]}</h4>
+                        <p class="text-[13px] text-gray-600 leading-relaxed mb-4">${item.description}</p>
+                        <p class="text-[11px] italic text-gray-400 mb-6 italic border-l-2 border-gray-100 pl-4">${item.reasoning}</p>
+                        <a href="${item.shop_link}" target="_blank" class="text-[10px] uppercase border-b border-black font-bold tracking-widest hover:text-gray-400 hover:border-gray-400 transition-colors">
+                            The Iconic | Shop Item
+                        </a>
+                    </div>
+                </div>
+            `).join('');
+
+            results.classList.remove('hidden');
+            results.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        document.getElementById('briefBtn').addEventListener('click', getBrief);
+    </script>
+</body>
+</html>
