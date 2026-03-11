@@ -164,8 +164,8 @@
                         <img src="${item.image_url}" alt="${item.description}" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700">
                     </div>
                     <div class="px-2">
-                        <h4 class="text-xs tracking-[0.2em] font-bold uppercase mb-2 border-b border-gray-100 pb-2">${item.color} ${item.name.split(':')[0]}</h4>
-                        <p class="text-[13px] text-gray-600 leading-relaxed mb-4">${item.description}</p>
+                        <h4 class="text-xs tracking-[0.2em] font-bold uppercase mb-2 border-b border-gray-100 pb-2">${item.color} ${item.description.split(':')[0]}</h4>
+                        <p class="text-[13px] text-gray-600 leading-relaxed mb-4">${item.description.split(':').slice(1).join(':').trim()}</p>
                         <p class="text-[11px] italic text-gray-400 mb-6 italic border-l-2 border-gray-100 pl-4">${item.reasoning}</p>
                         <a href="${item.shop_link}" target="_blank" class="text-[10px] uppercase border-b border-black font-bold tracking-widest hover:text-gray-400 hover:border-gray-400 transition-colors">
                             The Iconic | Shop Item
