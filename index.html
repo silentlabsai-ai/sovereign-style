@@ -10,7 +10,7 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #F9F7F2; /* Soft Cream */
+            background-color: #F9F7F2;
             color: #1A1A1A;
         }
         h1, h2, h3 {
@@ -31,12 +31,26 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
+        .btn-premium:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
         .outfit-card {
             background: white;
-            transition: transform 0.4s ease;
+            transition: transform 0.4s ease, opacity 0.6s ease;
         }
         .outfit-card:hover {
             transform: scale(1.02);
+        }
+        .outfit-card.fade-in {
+            animation: cardFadeIn 0.6s ease forwards;
+            opacity: 0;
+        }
+        @keyframes cardFadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .loader {
             border-top-color: #1A1A1A;
@@ -44,6 +58,46 @@
         }
         @keyframes spinner {
             to { transform: rotate(360deg); }
+        }
+        .palette-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+        .palette-dot:hover {
+            transform: scale(1.4);
+        }
+        .colour-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 1px solid rgba(0,0,0,0.15);
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        .retailer-link {
+            display: inline-block;
+            padding: 4px 10px;
+            border: 1px solid #e5e5e5;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            font-weight: 600;
+            color: #1A1A1A;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            margin: 3px 3px 3px 0;
+        }
+        .retailer-link:hover {
+            background-color: #1A1A1A;
+            color: white;
+            border-color: #1A1A1A;
+        }
+        .loading-message {
+            transition: opacity 0.3s ease;
         }
     </style>
 </head>
@@ -61,12 +115,7 @@
         <section id="hero" class="flex flex-col items-center justify-center mb-24">
             <div class="max-w-2xl text-center mb-12">
                 <h2 class="text-3xl md:text-4xl mb-6">Dress for the data. <br><span class="italic">Style for the ambition.</span></h2>
-                <p class="text-gray-600 leading-relaxed mb-10">Our AI engine analyzes live Australian weather, market trends, and your unique professional persona to deliver your daily sartorial brief.</p>
-                
-                <!-- User ID Mock Input -->
-                <div class="mb-8 flex flex-col items-center">
-                    <input type="text" id="userId" placeholder="Enter User ID (e.g. user_123)" class="bg-transparent border-b border-gray-300 focus:border-black outline-none px-4 py-2 text-center w-full max-w-xs mb-4">
-                </div>
+                <p class="text-gray-600 leading-relaxed mb-10">Our AI engine analyzes live Australian weather, seasonal colour intelligence, and your unique professional persona to deliver your daily sartorial brief.</p>
 
                 <button id="briefBtn" class="btn-premium px-12 py-5 text-sm font-semibold flex items-center gap-3 mx-auto">
                     Get My Morning Brief
@@ -77,38 +126,99 @@
         <!-- Loading State -->
         <div id="loading" class="hidden flex flex-col items-center justify-center py-20">
             <div class="loader ease-linear rounded-full border-2 border-t-2 border-gray-200 h-10 w-10 mb-4"></div>
-            <p class="text-sm uppercase tracking-widest italic">Synchronizing Seasonal Data...</p>
+            <p id="loadingMsg" class="text-sm uppercase tracking-widest italic loading-message">Reading Melbourne skies...</p>
         </div>
 
         <!-- Result Section -->
-        <section id="results" class="hidden animate-in fade-in duration-1000">
-            <div id="weatherInfo" class="text-center mb-16 italic text-gray-600 border-y border-gray-100 py-6">
-                <!-- Weather info injected here -->
+        <section id="results" class="hidden">
+            <!-- Weather Bar -->
+            <div id="weatherBar" class="text-center mb-6 border-y border-gray-200 py-6">
+                <div class="flex items-center justify-center gap-3 mb-2">
+                    <img id="weatherIcon" src="" alt="" class="w-8 h-8 opacity-70">
+                    <span id="weatherCity" class="text-lg font-semibold tracking-wide"></span>
+                </div>
+                <p id="weatherDetail" class="text-sm text-gray-500 italic mb-1"></p>
+                <p id="weatherMeta" class="text-xs uppercase tracking-[0.3em] text-gray-400"></p>
             </div>
 
-            <div id="outfitGrid" class="grid grid-cols-1 md:grid-cols-3 gap-12">
-                <!-- Cards injected here -->
+            <!-- Seasonal Palette -->
+            <div id="paletteBar" class="flex items-center justify-center gap-2 mb-16">
+                <span class="text-[9px] uppercase tracking-[0.3em] text-gray-400 mr-2" id="seasonLabel"></span>
+                <div id="paletteSwatches" class="flex gap-2"></div>
             </div>
 
+            <!-- Outfit Grid -->
+            <div id="outfitGrid" class="grid grid-cols-1 md:grid-cols-3 gap-12"></div>
+
+            <!-- Styling Advice -->
             <div id="stylingAdvice" class="mt-20 max-w-3xl mx-auto text-center border-t border-black pt-12">
                 <h3 class="text-2xl mb-4 italic">The Final Note</h3>
                 <p id="adviceText" class="text-lg text-gray-700 leading-relaxed"></p>
+            </div>
+
+            <!-- Style Again Button -->
+            <div class="mt-16 mb-8 flex justify-center">
+                <button id="styleAgainBtn" class="btn-premium px-10 py-4 text-xs font-semibold flex items-center gap-2 mx-auto">
+                    Style Again
+                </button>
             </div>
         </section>
     </main>
 
     <footer class="mt-32 text-center text-xs tracking-widest text-gray-400 uppercase">
-        © 2026 Sovereign Style AU. All Rights Reserved.
+        &copy; 2026 Sovereign Style AU. All Rights Reserved.
     </footer>
 
     <script>
         const API_BASE = '/api/v1';
 
+        // Colour name to CSS colour mapping
+        const COLOUR_MAP = {
+            'cloud-dancer white': '#F5F0EB', 'canary yellow': '#FFE135', 'candy pink': '#E4717A',
+            'vibrant violet': '#7F00FF', 'chartreuse': '#DFFF00', 'chocolate brown': '#3B1E08',
+            'terracotta': '#CC6A4C', 'burnt orange': '#CC5500', 'olive': '#6B8E23', 'deep caramel': '#A0522D',
+            'transformative teal': '#008080', 'cocoa powder': '#3C1414', 'sapphire': '#0F52BA',
+            'emerald': '#046307', 'amethyst': '#9966CC', 'midnight navy': '#0D1B2A',
+            'sage green': '#B2AC88', 'blush': '#DE98AB', 'sky blue': '#87CEEB',
+            'warm sand': '#D2B48C', 'soft coral': '#F08080'
+        };
+
+        function getColourCSS(name) {
+            return COLOUR_MAP[name.toLowerCase()] || '#ccc';
+        }
+
+        // Rotating loading messages
+        const LOADING_MSGS = [
+            'Reading local skies...',
+            'Mapping seasonal palette...',
+            'Analysing thermal weight...',
+            'Curating your office brief...',
+            'Selecting from AU retailers...'
+        ];
+        let loadingInterval;
+
+        function startLoadingMessages() {
+            let i = 0;
+            const el = document.getElementById('loadingMsg');
+            el.textContent = LOADING_MSGS[0];
+            loadingInterval = setInterval(() => {
+                i = (i + 1) % LOADING_MSGS.length;
+                el.style.opacity = 0;
+                setTimeout(() => {
+                    el.textContent = LOADING_MSGS[i];
+                    el.style.opacity = 1;
+                }, 300);
+            }, 2200);
+        }
+
+        function stopLoadingMessages() {
+            clearInterval(loadingInterval);
+        }
+
         async function getBrief() {
             const btn = document.getElementById('briefBtn');
             const loading = document.getElementById('loading');
             const results = document.getElementById('results');
-            const userId = document.getElementById('userId').value || 'user_123';
 
             if (!navigator.geolocation) {
                 alert("Geolocation is not supported by your browser");
@@ -118,6 +228,7 @@
             btn.disabled = true;
             loading.classList.remove('hidden');
             results.classList.add('hidden');
+            startLoadingMessages();
 
             navigator.geolocation.getCurrentPosition(async (position) => {
                 const { latitude, longitude } = position.coords;
@@ -126,7 +237,7 @@
                     const response = await fetch(`${API_BASE}/generate-outfit`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ latitude, longitude, userId })
+                        body: JSON.stringify({ latitude, longitude, userId: 'user_123' })
                     });
 
                     const data = await response.json();
@@ -142,51 +253,90 @@
                 } finally {
                     btn.disabled = false;
                     loading.classList.add('hidden');
+                    stopLoadingMessages();
                 }
             }, (error) => {
                 alert("Location access denied. Please enable to get accurate styling.");
                 btn.disabled = false;
                 loading.classList.add('hidden');
+                stopLoadingMessages();
             });
         }
 
         function displayResults(data) {
             const results = document.getElementById('results');
-            const weatherInfo = document.getElementById('weatherInfo');
+
+            // Weather bar
+            const iconEl = document.getElementById('weatherIcon');
+            if (data.weatherIcon) {
+                iconEl.src = `https://openweathermap.org/img/wn/${data.weatherIcon}@2x.png`;
+                iconEl.alt = data.weatherDescription;
+                iconEl.classList.remove('hidden');
+            } else {
+                iconEl.classList.add('hidden');
+            }
+            document.getElementById('weatherCity').textContent = data.city;
+            document.getElementById('weatherDetail').textContent =
+                `${Math.round(data.currentTemp)}\u00B0C \u00B7 ${data.weatherDescription || ''}`;
+            document.getElementById('weatherMeta').textContent =
+                `Thermal Weight ${data.thermalWeight}/10 \u00B7 ${data.season || ''} Palette`;
+
+            // Palette swatches
+            const seasonLabel = document.getElementById('seasonLabel');
+            const swatchContainer = document.getElementById('paletteSwatches');
+            seasonLabel.textContent = data.season ? `${data.season} 2026` : '';
+            swatchContainer.innerHTML = (data.palette || []).map(c =>
+                `<div class="palette-dot" style="background-color: ${getColourCSS(c)}" title="${c}"></div>`
+            ).join('');
+
+            // Styling advice
+            document.getElementById('adviceText').textContent = data.overall_styling_advice;
+
+            // Outfit cards with staggered animation
             const outfitGrid = document.getElementById('outfitGrid');
-            const adviceText = document.getElementById('adviceText');
+            outfitGrid.innerHTML = data.outfits.map((item, index) => {
+                const itemName = item.description.split(':')[0];
+                const itemDesc = item.description.split(':').slice(1).join(':').trim();
+                const colourCSS = getColourCSS(item.color);
 
-            weatherInfo.innerText = `${data.city} | ${data.currentTemp}°C | Thermal Weight: ${data.thermalWeight}/10`;
-            adviceText.innerText = data.overall_styling_advice;
+                // Build retailer links
+                const shopLinks = item.shop_links
+                    ? Object.entries(item.shop_links).map(([name, url]) =>
+                        `<a href="${url}" target="_blank" class="retailer-link">${name}</a>`
+                    ).join('')
+                    : `<a href="https://www.theiconic.com.au/catalog/?q=${encodeURIComponent(itemName)}" target="_blank" class="retailer-link">The Iconic</a>`;
 
-            outfitGrid.innerHTML = data.outfits.map(item => `
-                <div class="outfit-card group">
+                return `
+                <div class="outfit-card group fade-in" style="animation-delay: ${index * 0.2}s">
                     <div class="aspect-[16/9] w-full bg-gray-100 overflow-hidden mb-6 flex items-center justify-center">
                         ${item.image_url
                           ? `<img src="${item.image_url}" alt="${item.description}" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700">`
                           : `<div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-200 text-center px-6">
-                               <span class="text-4xl mb-3 opacity-60">&#9826;</span>
-                               <span class="text-[10px] uppercase tracking-[0.3em] text-gray-400 font-semibold">${item.description.split(':')[0]}</span>
-                               <span class="text-[9px] uppercase tracking-[0.2em] text-gray-300 mt-1">${item.color}</span>
+                               <div class="w-16 h-16 rounded-full mb-3 opacity-40" style="background-color: ${colourCSS}"></div>
+                               <span class="text-[10px] uppercase tracking-[0.3em] text-gray-400 font-semibold">${itemName}</span>
                              </div>`
                         }
                     </div>
-                    <div class="px-2">
-                        <h4 class="text-xs tracking-[0.2em] font-bold uppercase mb-2 border-b border-gray-100 pb-2">${item.color} ${item.description.split(':')[0]}</h4>
-                        <p class="text-[13px] text-gray-600 leading-relaxed mb-4">${item.description.split(':').slice(1).join(':').trim()}</p>
-                        <p class="text-[11px] italic text-gray-400 mb-6 italic border-l-2 border-gray-100 pl-4">${item.reasoning}</p>
-                        <a href="${item.shop_link}" target="_blank" class="text-[10px] uppercase border-b border-black font-bold tracking-widest hover:text-gray-400 hover:border-gray-400 transition-colors">
-                            The Iconic | Shop Item
-                        </a>
+                    <div class="px-4 pb-6">
+                        <h4 class="text-xs tracking-[0.2em] font-bold uppercase mb-2 border-b border-gray-100 pb-2">
+                            <span class="colour-dot" style="background-color: ${colourCSS}"></span>${item.color}  ${itemName}
+                        </h4>
+                        <p class="text-[13px] text-gray-600 leading-relaxed mb-4">${itemDesc}</p>
+                        <p class="text-[11px] italic text-gray-400 mb-6 border-l-2 border-gray-100 pl-4">${item.reasoning}</p>
+                        <div class="flex flex-wrap">${shopLinks}</div>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
 
             results.classList.remove('hidden');
             results.scrollIntoView({ behavior: 'smooth' });
         }
 
         document.getElementById('briefBtn').addEventListener('click', getBrief);
+        document.getElementById('styleAgainBtn').addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(getBrief, 400);
+        });
     </script>
 </body>
 </html>

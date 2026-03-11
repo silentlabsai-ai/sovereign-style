@@ -59,14 +59,16 @@ const PALETTE_MAPPINGS: Record<Season, Palette> = {
   Spring: ['Sage green', 'Blush', 'Sky blue', 'Warm sand', 'Soft coral']
 };
 
-function getPalette(date: Date): Palette {
+function getSeason(date: Date): Season {
   const month = date.getMonth();
-  let season: Season;
-  if (month === 11 || month <= 1) season = 'Summer';
-  else if (month >= 2 && month <= 4) season = 'Autumn';
-  else if (month >= 5 && month <= 7) season = 'Winter';
-  else season = 'Spring';
-  return PALETTE_MAPPINGS[season];
+  if (month === 11 || month <= 1) return 'Summer';
+  else if (month >= 2 && month <= 4) return 'Autumn';
+  else if (month >= 5 && month <= 7) return 'Winter';
+  else return 'Spring';
+}
+
+function getPalette(date: Date): Palette {
+  return PALETTE_MAPPINGS[getSeason(date)];
 }
 
 // ── Weather Weight Engine ──
@@ -168,7 +170,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ]);
 
     const thermalWeight = calculateOutfitWeight(weatherData);
-    const palette = getPalette(new Date());
+    const now = new Date();
+    const season = getSeason(now);
+    const palette = PALETTE_MAPPINGS[season];
     const recommendations = await getOutfitRecommendations(thermalWeight, palette, userProfile);
 
     let imageUrl = '';
@@ -182,13 +186,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({
       city: weatherData.name,
       currentTemp: weatherData.main.feels_like,
+      weatherDescription: weatherData.weather?.[0]?.description || '',
+      weatherIcon: weatherData.weather?.[0]?.icon || '',
+      season,
+      palette,
       thermalWeight,
       outfits: recommendations.outfit.map((item) => ({
+        name: item.name,
         description: `${item.name}: ${item.description}`,
         reasoning: item.reasoning,
         color: item.color,
         image_url: imageUrl,
-        shop_link: `https://www.theiconic.com.au/catalog/?q=${encodeURIComponent(item.name)}`
+        shop_links: {
+          'The Iconic': `https://www.theiconic.com.au/catalog/?q=${encodeURIComponent(item.name)}`,
+          'Myer': `https://www.myer.com.au/search?query=${encodeURIComponent(item.name)}`,
+          'Country Road': `https://www.countryroad.com.au/search?q=${encodeURIComponent(item.name)}`,
+          'Uniqlo': `https://www.uniqlo.com/au/en/search?q=${encodeURIComponent(item.name)}`
+        }
       })),
       overall_styling_advice: recommendations.overall_styling_advice
     });
